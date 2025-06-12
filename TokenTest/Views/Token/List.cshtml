@@ -1,0 +1,352 @@
+﻿@model IEnumerable<TokenTest.Models.Token>
+@{
+    int page = ViewBag.Page ?? 1;
+    int pageSize = ViewBag.PageSize ?? 12;
+    int totalItems = ViewBag.TotalItems ?? 0;
+    int totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+    string searchText = ViewBag.SearchText ?? "";
+    string expiresFrom = ViewBag.ExpiresFrom ?? "";
+    string expiresTo = ViewBag.ExpiresTo ?? "";
+    string sortBy = ViewBag.SortBy ?? "CreatedAt";
+    var vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+}
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<head>
+    <title>Token List</title>
+</head>
+
+<style>
+    body {
+        font-family: 'Inter', sans-serif;
+        background: #f2f7fb;
+        padding: 30px;
+        color: #2c3e50;
+    }
+
+    h2 {
+        text-align: center;
+        color: #1a3d6e;
+        margin-bottom: 25px;
+    }
+
+    form#filterForm {
+        background: #ffffff;
+        padding: 20px 25px;
+        margin-bottom: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        align-items: center;
+    }
+
+    form#filterForm input,
+    form#filterForm select {
+        padding: 8px 12px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+
+    form#filterForm button,
+    form#filterForm a {
+        padding: 9px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 14px;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        background-color: #4a90e2;
+        color: #fff;
+        transition: background-color 0.3s;
+    }
+
+    form#filterForm button:hover,
+    form#filterForm a:hover {
+        background-color: #357abd;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    thead {
+        background-color: #e6f0f9;
+    }
+
+    th, td {
+        padding: 12px 10px;
+        text-align: left;
+        font-size: 14px;
+        border-bottom: 1px solid #eef1f5;
+        vertical-align: middle;
+    }
+
+    td.editable {
+        cursor: pointer;
+        background-color: #fff9e6;
+    }
+
+    td.editable:hover {
+        background-color: #fff2cc;
+    }
+
+    tbody tr:nth-child(odd) {
+        background-color: #f9fcff;
+    }
+
+    tbody tr:hover {
+        background-color: #f0f8ff;
+    }
+
+    .highlight {
+        background-color: #ffdddd !important;
+    }
+
+    .pagination {
+        margin-top: 20px;
+        text-align: center;
+    }
+
+    .pagination a,
+    .pagination b {
+        display: inline-block;
+        margin: 0 6px;
+        font-weight: bold;
+        font-size: 14px;
+        color: #4a90e2;
+    }
+
+    .pagination b {
+        color: #000;
+    }
+
+    @@media screen and (max-width: 768px) {
+        form#filterForm {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        table {
+            font-size: 12px;
+        }
+
+        th, td {
+            padding: 10px 6px;
+        }
+    }
+
+    .btn-refresh {
+    padding: 9px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    background-color: #4a90e2;
+    color: #fff;
+    transition: background-color 0.3s;
+
+    .copy-btn {
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        font-size: 16px;
+        margin-left: 5px;
+    }
+}
+
+.btn-refresh:hover {
+    background-color: #357abd;
+}
+
+</style>
+
+<h2>Saved Tokens</h2>
+
+<form method="get" id="filterForm">
+    <input type="text" name="searchText" placeholder="Search by username" value="@searchText" />
+    <label>Expires From:</label>
+    <input type="date" name="expiresFrom" value="@expiresFrom" />
+    <label>Expires To:</label>
+    <input type="date" name="expiresTo" value="@expiresTo" />
+    <label>Sort by:</label>
+    <select name="sortBy" onchange="this.form.submit()">
+        <option value="CreatedAt" @(sortBy == "CreatedAt" ? "selected" : "")>Created Date Asc</option>
+        <option value="CreatedAt_desc" @(sortBy == "CreatedAt_desc" ? "selected" : "")>Created Date Desc</option>
+        <option value="ExpiresAt" @(sortBy == "ExpiresAt" ? "selected" : "")>Expires At Asc</option>
+        <option value="ExpiresAt_desc" @(sortBy == "ExpiresAt_desc" ? "selected" : "")>Expires At Desc</option>
+    </select>
+    <button type="submit">Filter</button>
+    <a href="@Url.Action("List", "Token")">Reset</a>
+</form>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Access Token</th>
+            <th>Client ID</th>
+            <th>Username</th>
+            <th>Scope</th>
+            <th>Token Type</th>
+            <th>Created At</th>
+            <th>Expires At</th>
+            <th>Time Left</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var token in Model)
+        {
+            var createdAtUtc = TimeZoneInfo.ConvertTimeToUtc(token.CreatedAt, vnTimeZone);
+            var expiresAtUtc = TimeZoneInfo.ConvertTimeToUtc(token.ExpiresAt, vnTimeZone);
+
+            var timeLeft = token.ExpiresAt - DateTime.Now;
+            var highlight = timeLeft.TotalMinutes < 5 ? "highlight" : "";
+
+            <tr class="@highlight" data-id="@token.Id">
+                <td>@token.Id</td>
+                <td>
+                    <span class="copy-text" data-fulltext="@token.AccessToken">
+                        @(token.AccessToken != null && token.AccessToken.Length > 30 ? token.AccessToken.Substring(0, 30) + "..." : token.AccessToken)
+                    </span>
+                    <button class="copy-btn" title="Copy" onclick="copyToClipboardFull(this)">
+                        📋
+                    </button>
+                </td>
+                <td>@token.ClientId</td>
+                <td>
+                    <span class="copy-text" data-fulltext="@token.Username">
+                        @(token.Username != null && token.Username.Length > 20 ? token.Username.Substring(0, 20) + "..." : token.Username)
+                    </span>
+                    <button class="copy-btn" title="Copy" onclick="copyToClipboardFull(this)">
+                        📋
+                    </button>
+                </td>
+
+                <td class="editable" data-field="Scope">@token.Scope</td>
+                <td class="editable" data-field="TokenType">@token.TokenType</td>
+                <td data-utc="@createdAtUtc.ToString("o")">@createdAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                <td data-utc="@expiresAtUtc.ToString("o")">@expiresAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                <td>@Math.Round(timeLeft.TotalMinutes, 1) mins</td>
+                <td>
+                    @using (Html.BeginForm("SaveTokenContext", "Token", FormMethod.Post))
+                {
+                        <input type="hidden" name="tokenUrl" value="https://localhost:5001/connect/token" />
+                        <input type="hidden" name="clientId" value="@token.ClientId" />
+                        <input type="hidden" name="clientSecret" value="@token.ClientSecret" />
+                        <input type="hidden" name="username" value="@token.Username" />
+                        <input type="hidden" name="scope" value="@token.Scope" />
+                        <input type="hidden" name="customExpiresTime" value="1000" />
+                        <button type="submit" class="btn-refresh">Edit</button>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<script>
+    function copyToClipboardFull(btn) {
+        const span = btn.previousElementSibling;
+        const fullText = span.dataset.fulltext || span.textContent;
+
+        navigator.clipboard.writeText(fullText).then(() => {
+            btn.textContent = "✅";
+            setTimeout(() => btn.textContent = "📋", 1500);
+        }).catch(err => {
+            alert("Copy failed: " + err);
+        });
+    }
+</script>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll("td[data-utc]").forEach(td => {
+            const utcTime = new Date(td.getAttribute("data-utc"));
+            const localTime = utcTime.toLocaleString(undefined, {
+                year: "numeric", month: "2-digit", day: "2-digit",
+                hour: "2-digit", minute: "2-digit", second: "2-digit",
+                hour12: false
+            });
+            td.textContent = localTime;
+        });
+    });
+</script>
+
+<script>
+$(document).ready(function() {
+    $('.editable').click(function() {
+        if ($(this).find('input').length > 0) return;
+
+        var currentTd = $(this);
+        var originalValue = currentTd.text().trim();
+        var field = currentTd.data('field');
+        var id = currentTd.closest('tr').data('id');
+
+        var input = $('<input type="text" />').val(originalValue);
+        currentTd.html(input);
+        input.focus();
+
+        input.blur(function() {
+            var newValue = $(this).val();
+            if(newValue !== originalValue) {
+                $.ajax({
+                    url: '@Url.Action("UpdateTokenField", "Token")',
+                    type: 'POST',
+                    data: {
+                        id: id,
+                        field: field,
+                        value: newValue
+                    },
+                    success: function(response) {
+                        if(response.success) {
+                            currentTd.text(newValue);
+                        } else {
+                            alert('Update error: ' + response.message);
+                            currentTd.text(originalValue);
+                        }
+                    },
+                    error: function() {
+                        alert('An error occurred while updating.');
+                        currentTd.text(originalValue);
+                    }
+                });
+            } else {
+                currentTd.text(originalValue);
+            }
+        });
+    });
+});
+</script>
+
+@if (totalPages > 1)
+{
+    <div class="pagination">
+        Page:
+        @for (int i = 1; i <= totalPages; i++)
+        {
+            if (i == page)
+            {
+                <b>@i</b>
+            }
+            else
+            {
+                <a href="@Url.Action("List", "Token", new { page = i })">@i</a>
+            }
+        }
+    </div>
+}

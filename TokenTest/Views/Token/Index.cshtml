@@ -1,0 +1,206 @@
+﻿@using TokenTest.Models
+@{
+    ViewBag.Title = "Get Access Token";
+}
+
+<head>
+    <title>Get Token</title>
+</head>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+    body {
+        font-family: 'Inter', sans-serif;
+        background: #f2f7fb;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 100vh;
+        padding: 40px 20px;
+        color: #2c3e50;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 520px;
+        background: #ffffff;
+        padding: 30px 35px;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.07);
+    }
+
+    h2 {
+        text-align: center;
+        color: #1c3d6e;
+        margin-bottom: 25px;
+        font-size: 24px;
+        font-weight: 700;
+    }
+
+    label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: #34495e;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+        width: 100%;
+        padding: 12px 15px;
+        margin-bottom: 20px;
+        border: 1.5px solid #d1dce8;
+        border-radius: 8px;
+        font-size: 15px;
+        background-color: #f9f9fb;
+        transition: border-color 0.3s;
+    }
+
+    input:focus {
+        border-color: #4a90e2;
+        outline: none;
+        background-color: #fff;
+        box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+    }
+
+    button[type="submit"] {
+        width: 100%;
+        padding: 12px;
+        background: linear-gradient(135deg, #4a90e2, #357abd);
+        border: none;
+        border-radius: 8px;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.25s;
+    }
+
+        button[type="submit"]:hover {
+            background: linear-gradient(135deg, #357abd, #2d598d);
+        }
+
+    p a {
+        display: inline-block;
+        margin-top: 20px;
+        text-decoration: none;
+        color: #2f6db4;
+        font-weight: 600;
+    }
+
+        p a:hover {
+            text-decoration: underline;
+        }
+
+    .result-box, .error-box {
+        margin-top: 30px;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .result-box {
+        background: #e6f4ff;
+        color: #1c3a5e;
+    }
+
+    .token-line {
+    word-break: break-all;
+    white-space: pre-wrap;
+}
+
+    .error-box {
+        background: #fff1f0;
+        border: 1px solid #ffa39e;
+        color: #cf1322;
+    }
+
+    .result-box h3 {
+        margin-top: 0;
+        font-weight: 700;
+        margin-bottom: 15px;
+    }
+
+    details {
+        background: #f0f8ff;
+        padding: 10px 15px;
+        border-radius: 8px;
+        margin-top: 15px;
+        font-size: 13px;
+        color: #003366;
+        max-height: 250px;
+        overflow-x: auto;
+    }
+
+    summary {
+        cursor: pointer;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    pre {
+        white-space: pre-wrap;
+    }
+</style>
+
+<div class="container">
+    <h2>@ViewBag.Title</h2>
+
+    @using (Html.BeginForm("GetToken", "Token", FormMethod.Post))
+    {
+        <label for="tokenUrl">Token URL:</label>
+        <input id="tokenUrl" type="text" name="tokenUrl" value="@(ViewBag.TokenUrl ?? "https://localhost:5001/connect/token")" required />
+
+        <label for="clientId">Client ID:</label>
+        <input id="clientId" type="text" name="clientId" value="@(ViewBag.ClientId ?? "")" required />
+
+        <label for="clientSecret">Client Secret:</label>
+        <input id="clientSecret" type="password" name="clientSecret" value="@(ViewBag.ClientSecret ?? "")" required />
+
+        <label for="username">Username:</label>
+        <input id="username" type="text" name="username" value="@(ViewBag.Username ?? "")" required />
+
+        <label for="password">Password:</label>
+        <input id="password" type="password" name="password" required />
+
+        <label for="scope">Scope:</label>
+        <input id="scope" type="text" name="scope" value="@(ViewBag.Scope ?? "")" required />
+
+        <label for="customExpiresTime">custom_expires_time:</label>
+        <input id="customExpiresTime" type="text" name="customExpiresTime" value="@(ViewBag.CustomExpiresTime ?? "")" />
+
+        <button type="submit">Get Token</button>
+
+        <p><a href="@Url.Action("List", "Token")">View list of saved tokens</a></p>
+    }
+
+    @if (ViewBag.Token != null && ViewBag.IsSubmitted == true)
+    {
+        var token = ViewBag.Token as TokenResponse;
+
+        if (!string.IsNullOrEmpty(token.Error))
+        {
+            <div class="error-box">
+                <b>Error:</b> @token.Error <br />
+                <b>Description:</b> @token.ErrorDescription
+            </div>
+        }
+        else
+        {
+            <div class="result-box">
+                <h3>Token Response:</h3>
+                <p class="token-line"><b>Access Token:</b> @token.AccessToken</p>
+                <p><b>Expires In:</b> @token.ExpiresIn seconds</p>
+                <p><b>Refresh Token:</b> @token.RefreshToken</p>
+                <p><b>Token Type:</b> @token.TokenType</p>
+                <p><b>Scope:</b> @token.Scope</p>
+
+                <details>
+                    <summary>Raw JSON</summary>
+                    <pre>@ViewBag.RawJson</pre>
+                </details>
+            </div>
+        }
+    }
+</div>
